@@ -36,7 +36,7 @@ const DISPLAY_PLAN_NAME: Record<PlanSlug, string> = {
   signature: "Signature",
 };
 
-type Props = { initialPlan?: PlanSlug };
+type Props = { initialPlan?: PlanSlug; initialType?: string };
 
 /** Lepo labelovanje za ključ addona */
 function prettyLabel(key: string) {
@@ -70,6 +70,53 @@ type InitFromQuery = {
   dontPublish?: boolean;
 };
 
+/** ——— URL type → canonical event name (robust match) ——— */
+function normalizeAsciiKey(s: string) {
+  return s
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // strip diacritics
+    .replace(/[^a-z0-9]+/g, ""); // squash non-alphanum
+}
+
+/**
+ * Pokušava da nađe najbliže poklapanje među event tipovima koje API vraća,
+ * tolerantno na dijakritike, sing./plurale i sinonime ("Studio" ↔ "Portret", "Svadba" ↔ "Venčanje", "Rođendan" ↔ "Rođendani" itd).
+ */
+function findClosestEventType(raw: string | undefined, candidates: string[]): string | undefined {
+  if (!raw) return undefined;
+  const key = normalizeAsciiKey(raw);
+  const pool = candidates.map((c) => ({ raw: c, key: normalizeAsciiKey(c) }));
+
+  // 1) direktno poklapanje po normalizovanom ključu
+  const exact = pool.find((p) => p.key === key);
+  if (exact) return exact.raw;
+
+  // 2) sinonimi / klasteri
+  const CLUSTERS: Record<string, string[]> = {
+    svadba: ["svadba", "vencanje", "venčanje"],
+    vencanje: ["svadba", "vencanje", "venčanje"],
+    studio: ["studio", "portret", "portreti"],
+    portret: ["studio", "portret", "portreti"],
+    rodjendan: ["rodjendan", "rodjendani", "rodendan", "rodendani", "rođendan", "rođendani"],
+    krstenje: ["krstenje", "krstenja", "krštenje", "krštenja"],
+    drugo: ["drugo"],
+  };
+
+  // nađi klaster kome pripada "key"
+  const cluster = Object.values(CLUSTERS).find((arr) => arr.includes(key));
+  if (cluster) {
+    const hit = pool.find((p) => cluster.includes(p.key));
+    if (hit) return hit.raw;
+  }
+
+  // 3) soft match: startsWith / contains
+  const soft = pool.find((p) => p.key.startsWith(key) || key.startsWith(p.key));
+  if (soft) return soft.raw;
+
+  return undefined;
+}
+
 function readInitFromUrl(): InitFromQuery {
   if (typeof window === "undefined") return { addons: {} };
   const q = new URLSearchParams(window.location.search);
@@ -91,11 +138,68 @@ function readInitFromUrl(): InitFromQuery {
     dontPublish: toBool(q.get("dontPublish")),
   };
 }
+// —— Robustno mapiranje tipa proslave iz URL-a na dostupne iz API-ja ——
+function norm(s: string) {
+  return s
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // skini dijakritiku
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-export default function PricingConfigurator({ initialPlan = "classic" }: Props) {
+// sinonimi i jednina/množina → kanonsko ime
+const TYPE_ALIASES: Record<string, string> = {
+  svadba: "Svadba",
+  vencanje: "Svadba",
+  "venčanje": "Svadba",
+
+  studio: "Studio",
+  portret: "Studio",
+
+  rodjendan: "Rođendan",
+  rodjendani: "Rođendan",
+  "rođendan": "Rođendan",
+  "rođendani": "Rođendan",
+
+  krstenje: "Krštenje",
+  "krštenje": "Krštenje",
+  krstenja: "Krštenje",
+  "krštenja": "Krštenje",
+
+  drugo: "Drugo",
+};
+
+function matchEventType(raw: string | undefined | null, available: string[], fallback: string) {
+  if (!available?.length) return fallback;
+  if (!raw) return available.includes(fallback) ? fallback : available[0];
+
+  const n = norm(raw);
+
+  // 1) direktan alias → kanon, ako postoji u listi
+  const aliased = TYPE_ALIASES[n];
+  if (aliased && available.includes(aliased)) return aliased;
+
+  // 2) tačno normalizovano poklapanje
+  for (const ev of available) if (norm(ev) === n) return ev;
+
+  // 3) "meko" poklapanje (startsWith u oba smera)
+  for (const ev of available) {
+    const m = norm(ev);
+    if (m.startsWith(n) || n.startsWith(m)) return ev;
+  }
+
+  // 4) fallback
+  return available.includes(fallback) ? fallback : available[0];
+}
+
+export default function PricingConfigurator({ initialPlan = "classic", initialType }: Props) {
   const initQ = useRef<InitFromQuery>(readInitFromUrl());
   const [plan, setPlan] = useState<PlanSlug>(initQ.current.plan || initialPlan);
-  const [eventType, setEventType] = useState<EventType>("Svadba");
+  // SSR-safe inicijalni type: mapiramo searchParams?.type na najbliži dostupni iz FALLBACK_EVENTS
+const [eventType, setEventType] = useState<EventType>(() =>
+  matchEventType(initialType, FALLBACK_EVENTS as unknown as string[], "Svadba") as EventType
+);
 
   // Excel/Sheets data
   const [events, setEvents] = useState<EventType[]>(FALLBACK_EVENTS);
@@ -129,13 +233,10 @@ export default function PricingConfigurator({ initialPlan = "classic" }: Props) 
           setExtras(patched.extrasIncluded);
           setNotes(patched.notes);
 
-          // Ako URL nosi 'type' i nalazi se u listi — postavi
-          const t = initQ.current.type;
-          if (t && patched.eventTypes.includes(t as EventType)) {
-            setEventType(t as EventType);
-          } else {
-            if (!patched.eventTypes.includes(eventType)) setEventType(patched.eventTypes[0]);
-          }
+// Ako URL/SSR nose 'type' — mapiraj ga na najbliži u onome što API vraća
+const desired = initQ.current.type || initialType;
+const matched = matchEventType(desired, patched.eventTypes as string[], patched.eventTypes[0]);
+setEventType(matched as EventType);
 
           // Ako URL nosi plan — postavi (već je i inicijalni state)
           const p = initQ.current.plan;
@@ -376,22 +477,30 @@ export default function PricingConfigurator({ initialPlan = "classic" }: Props) 
                     </summary>
 
                     <div className="px-3 pb-3 pt-1">
-                      {/* Osnovne stavke plana */}
                       <ul className="space-y-1.5">
+                        {/* 1) Osnovne stavke plana */}
                         {includesBase.map((it, idx) => (
                           <li key={`incbase-${idx}`} className="flex items-start gap-2 text-sm text-white/85">
                             <CheckIcon /><span>{it}</span>
                           </li>
                         ))}
 
-                        {/* “Extras” (USB, 4K, Izrada foto...) koje API šalje kao extrasIncluded */}
+                        {/* 2) Extras iz API-ja */}
                         {extrasIncluded.map((it, idx) => (
                           <li key={`extra-${idx}`} className="flex items-start gap-2 text-sm text-white/80">
                             <CheckIcon /><span>{it}</span>
                           </li>
                         ))}
 
-                        {/* Uključeni addoni (naglašeni – “sijaju”) */}
+                        {/* 3) NAPOMENA pre “sijača” (REORDERED) */}
+                        {note && (
+                          <li key="note" className="flex items-start gap-2 text-sm text-white/85 mt-2">
+                            <CheckIcon />
+                            <span>{note}</span>
+                          </li>
+                        )}
+
+                        {/* 4) Uključeni addoni — uvek POSLEDNJI i “sijaju” */}
                         {includedAddons.map((it, idx) => (
                           <li
                             key={`adinc-${idx}`}
@@ -418,14 +527,6 @@ export default function PricingConfigurator({ initialPlan = "classic" }: Props) 
                             <span className="shine" />
                           </li>
                         ))}
-
-                        {/* NOTE: napomena kao stavka */}
-                        {note && (
-                          <li key="note" className="flex items-start gap-2 text-sm text-white/85 mt-2">
-                            <CheckIcon />
-                            <span>{note}</span>
-                          </li>
-                        )}
                       </ul>
                     </div>
 
@@ -493,7 +594,7 @@ export default function PricingConfigurator({ initialPlan = "classic" }: Props) 
                     <div className="mt-1 text-xs text-white/70">
                       {!addonChecked["dontPublish"]
                         ? "Značilo bi nam da ovu opciju ne uključujete 🙂 (pomaže nam kao preporuka/portfolio)."
-                        : "Razumemo i poštujemo 🙁 — ne objavljujemo vaše fotografije u portfoliju/mrežama."}
+                        : "Razumemo i poštujemo 🙂 — ne objavljujemo vaše fotografije u portfoliju/mrežama."}
                     </div>
                   )}
                 </div>

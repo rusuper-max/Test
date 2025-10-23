@@ -1,6 +1,6 @@
 // src/data/addonsConfig.ts
 import type { PlanSlug } from "@/data/packages";
-import type { EventType } from "@/data/eventPricing"; // ili iz tvog fajla; fallback: "Svadba" | "Venčanje" | "Portret" | "Rođendan" | "Krštenja" | "Drugo"
+import type { EventType } from "@/lib/addons";
 
 export type AddonKey = "secondPhotog" | "video" | "drone" | "album" | "express";
 export type AddonState = "included" | "available" | "hidden";
@@ -51,7 +51,7 @@ const RULES: Partial<Record<EventType, Partial<Record<PlanSlug, Partial<Record<A
     classic: { video: "included" },
     signature: { secondPhotog: "included", video: "included" },
   },
-  "Portret": {
+  "Studio": {
     basic: { video: "hidden", drone: "hidden" },
     classic: { video: "hidden", drone: "hidden" },
     signature: { video: "hidden", drone: "hidden" },

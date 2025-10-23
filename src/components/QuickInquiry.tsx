@@ -52,7 +52,7 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
       });
       if (!res.ok) throw new Error(await res.text());
       setSent("ok");
-      // opciono: lagano resetuj poruku, ali zadrži tip/datum/lokaciju
+      // lagani reset poruke (zadržavamo osnovne podatke)
       setF((s) => ({ ...s, message: "" }));
     } catch {
       setSent("err");
@@ -124,20 +124,20 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </div>
 
         <div className="grid gap-1 md:col-span-2">
-          <label className="text-sm text-white/70">Poruka (opciono)</label>
+          <label className="text-sm text-white/70">Pitanje / poruka</label>
           <textarea
             rows={3}
             value={f.message}
             onChange={onChange("message")}
             className="rounded-xl border border-white/10 bg-black/40 px-3 py-2 outline-none focus:border-accent-400/60"
-            placeholder="Kratka poruka / specijalne želje…"
+            placeholder="Ukoliko imate pitanje, napišite ga ovde…"
           />
         </div>
       </div>
 
       <div className="mt-1 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
         <div className="text-xs text-white/60">
-          Ovaj brzi upit šalje nam mejl direktno sa sajta (bez otvaranja vašeg mail klijenta).
+          Ispunite kratku formu i javljamo se u najkraćem roku.
         </div>
         <button
           type="submit"
@@ -149,6 +149,11 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </button>
       </div>
 
+      {sent === "ok" && (
+        <div className="text-sm text-emerald-300/90">
+          Hvala! Vaša poruka je poslata — proverite email u narednim satima.
+        </div>
+      )}
       {sent === "err" && (
         <div className="text-sm text-red-400/90">
           Ups, nešto nije u redu. Pokušajte kasnije ili nas kontaktirajte direktno emailom/telefonom.

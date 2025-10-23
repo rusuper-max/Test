@@ -12,14 +12,23 @@ export const metadata = {
 };
 
 /** Putanje do portreta — stavi svoje fajlove u /public/about/ (npr. 1500×2000) */
-const TEAM = [
+type TeamPerson = {
+  name: string;
+  role: string;
+  photo: string;
+  bio: string[];
+  highlights?: string[];
+};
+
+const TEAM: TeamPerson[] = [
   {
     name: "Janko",
     role: "Cinematographer & Photographer",
     photo: "/about/janko.jpg",
     bio: [
-      "Strast prema slici i pokretu vodi me da svaku priču ispričam iskreno i sa dušom. Bilo da je u pitanju svadba, portret ili kratak film, moj cilj je da zabeležim emociju — onaj trenutak koji se ne može ponoviti, ali može zauvek trajati kroz kadar.",
-      "Kombinujem dokumentarni i umetnički pristup, tražeći kontrast između svetla, senke i osećaja.",
+      "Strast prema slici i pokretu vodi me da svaku priču ispričam iskreno i sa dušom...",
+      "Kombinujem dokumentarni i umetnički pristup...",
+      "Najviše volim spontanu emociju i prirodno svetlo.",
     ],
     highlights: [
       "Video snimanje i režija",

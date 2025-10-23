@@ -7,9 +7,11 @@ import Container from "./Container";
 type Props = {
   veil?: boolean;   // beli filter preko videa
   center?: boolean; // true = tekst centriran; false = bottom-left
+  /** Gde vodi dugme "Pošalji upit" (default /upit) */
+  ctaHref?: string;
 };
 
-export default function HeroVideo({ veil = true, center = true }: Props) {
+export default function HeroVideo({ veil = true, center = true, ctaHref = "/upit" }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
@@ -22,13 +24,7 @@ export default function HeroVideo({ veil = true, center = true }: Props) {
     else v.pause();
   }, [muted, playing]);
 
-  const tryPlay = () => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.muted = true; // mobile autoplay policy
-    v.play().catch(() => {});
-  };
-
+  // Overlay stil (veil ili minimalni tamni gradijent radi čitljivosti)
   const overlay = veil
     ? "linear-gradient(to bottom, rgba(255,255,255,.26) 0%, rgba(0,0,0,.48) 60%, rgba(0,0,0,.85) 100%)"
     : "linear-gradient(to bottom, rgba(0,0,0,.10) 0%, rgba(0,0,0,.55) 70%, rgba(0,0,0,.82) 100%)";
@@ -40,20 +36,10 @@ export default function HeroVideo({ veil = true, center = true }: Props) {
         className="absolute inset-0 h-full w-full object-cover"
         autoPlay
         muted
-        playsInline
         loop
-        preload="auto"
-        poster="/hero/hero-poster.jpg"   // stavi fajl u /public/hero/
-        crossOrigin="anonymous"
-        onLoadedData={tryPlay}
-        onCanPlay={tryPlay}
-        onError={(e) => {
-          const el = e.currentTarget as HTMLVideoElement;
-          console.warn("Hero video error. Sources:",
-            Array.from(el.querySelectorAll("source")).map(s => (s as HTMLSourceElement).src));
-        }}
+        playsInline
+        preload="metadata"
       >
-        <source src="/hero/hero.webm" type="video/webm" />
         <source src="/hero/hero.mp4" type="video/mp4" />
       </video>
 
@@ -73,7 +59,7 @@ export default function HeroVideo({ veil = true, center = true }: Props) {
             </p>
             <div className="mt-6 flex justify-center gap-3">
               <Link href="/portfolio" className="btn btn-outline">Portfolio</Link>
-              <Link href="/kontakt" className="btn btn-primary">Pošalji upit</Link>
+              <Link href={ctaHref} className="btn btn-primary">Pošalji upit</Link>
             </div>
           </div>
         </Container>
@@ -88,7 +74,7 @@ export default function HeroVideo({ veil = true, center = true }: Props) {
           </p>
           <div className="mt-6 flex gap-3">
             <Link href="/portfolio" className="btn btn-outline">Portfolio</Link>
-            <Link href="/kontakt" className="btn btn-primary">Pošalji upit</Link>
+            <Link href={ctaHref} className="btn btn-primary">Pošalji upit</Link>
           </div>
         </Container>
       )}

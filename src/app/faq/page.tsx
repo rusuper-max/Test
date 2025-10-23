@@ -1,3 +1,4 @@
+// src/app/faq/page.tsx
 import type { ReactNode } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -100,19 +101,41 @@ const FAQ: FaqItem[] = [
     ),
   },
 
- {
-  id: toId("Putni troškovi i dolazak van grada?"),
-  q: "Putni troškovi i dolazak van grada?",
-  aText:
-    "U Zlatiborskom okrugu putni troškovi se ne naplaćuju. Za angažmane van okruga troškovi su predmet dogovora nakon kontakta (u zavisnosti od mesta i termina).",
-  aJSX: (
-    <>
-      U <strong>Zlatiborskom okrugu</strong> putni troškovi se <strong>ne naplaćuju</strong>. Za angažmane{" "}
-      <em>van okruga</em> troškovi su <strong>prema dogovoru</strong> nakon kontakta (u zavisnosti od mesta i termina).{" "}
-      <Link className="link" href="/kontakt">Kontakt</Link>
-    </>
-  ),
-},
+  /** NOVO: Ekspres obrada (prioritetna isporuka 3–5 radnih dana) */
+  {
+    id: toId("Šta je Ekspres obrada?"),
+    q: "Šta je Ekspres obrada?",
+    aText:
+      "Ekspres obrada je prioritetna postprodukcija – projekat ide preko reda, a online galerija stiže u roku od 3–5 radnih dana. Kvalitet je isti kao kod standardne obrade; doplata se dodaje kroz konfigurator. Ubrzana isporuka videa je moguća po dogovoru.",
+    aJSX: (
+      <>
+        <p>
+          <strong>Ekspres obrada</strong> je prioritetna postprodukcija — vaš projekat ide
+          <em> „preko reda“</em> ispred redovnih obrada. Gotovu online galeriju dobijate u roku od{" "}
+          <strong>3–5 radnih dana</strong> od događaja (umesto standardnog roka).
+        </p>
+        <ul className="mt-3 list-disc space-y-1 pl-5 text-white/80">
+          <li>Kvalitet i selekcija su identični kao kod standardne obrade — ubrzava se samo isporuka.</li>
+          <li>Opcija se dodaje kao doplata u <Link className="link" href="/ponude">konfiguratoru</Link>.</li>
+          <li>Za ubrzanu isporuku <em>videa</em> napišite u poruci — javimo dostupne mogućnosti.</li>
+        </ul>
+      </>
+    ),
+  },
+
+  {
+    id: toId("Putni troškovi i dolazak van grada?"),
+    q: "Putni troškovi i dolazak van grada?",
+    aText:
+      "U Zlatiborskom okrugu putni troškovi se ne naplaćuju. Za angažmane van okruga troškovi su predmet dogovora nakon kontakta (u zavisnosti od mesta i termina).",
+    aJSX: (
+      <>
+        U <strong>Zlatiborskom okrugu</strong> putni troškovi se <strong>ne naplaćuju</strong>. Za angažmane{" "}
+        <em>van okruga</em> troškovi su <strong>prema dogovoru</strong> nakon kontakta (u zavisnosti od mesta i termina).{" "}
+        <Link className="link" href="/kontakt">Kontakt</Link>
+      </>
+    ),
+  },
 
   {
     id: toId("Da li nudite video i dron?"),

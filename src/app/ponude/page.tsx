@@ -9,12 +9,13 @@ export const metadata = {
   description: "Tri paketa uz konfigurator dodataka — izračunajte orijentacionu cenu i pošaljite upit.",
 };
 
-type Props = { searchParams?: { plan?: PlanSlug } };
+type Props = { searchParams?: { plan?: PlanSlug; type?: string } };
 
 export default function OffersPage({ searchParams }: Props) {
   const plan = (searchParams?.plan && ["basic","classic","signature"].includes(searchParams.plan))
     ? (searchParams!.plan as PlanSlug)
     : "classic";
+    const initialType = searchParams?.type; // može biti npr. "Studio", "Rođendan"...
 
   return (
     <>
@@ -33,7 +34,7 @@ export default function OffersPage({ searchParams }: Props) {
           </div>
 
           <div className="mt-10">
-            <PricingConfigurator initialPlan={plan} />
+            <PricingConfigurator initialPlan={plan} initialType={initialType} />
           </div>
         </Container>
       </main>

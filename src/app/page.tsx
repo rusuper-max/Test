@@ -11,10 +11,7 @@ import QuickInquiry from "@/components/QuickInquiry";
 import { listPublicImagesIn } from "@/lib/listPublicImages";
 import { CAT_LABEL, type CatSlug } from "@/data/portfolio";
 import { Cinzel } from "next/font/google";
-import HomeMarquee from "@/components/HomeMarquee";
 
-// ...
-<HomeMarquee />
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
@@ -86,7 +83,7 @@ export default function HomePage() {
             </div>
 
             <div className="mt-8 flex justify-center">
-              <a href="/portfolio" className="btn btn-primary">Otvori Portfolio</a>
+              <Link href="/portfolio" className="btn btn-primary">Otvori Portfolio</Link>
             </div>
           </Container>
         </section>
