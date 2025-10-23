@@ -3,6 +3,7 @@ import * as XLSX from "xlsx";
 import path from "node:path";
 import fs from "node:fs/promises";
 import type { AddonRule } from "@/lib/addons";
+export const runtime = 'nodejs';
 
 /* ---------- utils ---------- */
 function norm(s: any): string {
