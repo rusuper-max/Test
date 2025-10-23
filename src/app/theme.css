@@ -1,0 +1,77 @@
+/* src/app/theme.css */
+
+/* Base tokens (shared) */
+:root {
+  --accent: 20 184 166;      /* #14b8a6 – tvoja teal */
+  --accent-fg: 0 0 0;
+  --radius: 16px;
+}
+
+/* Dark (default) */
+:root,
+html[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: 0 0 0;
+  --fg: 243 244 246;         /* neutral-100 */
+  --muted: 38 38 38;         /* neutral-800 */
+  --border: 64 64 64;        /* neutral-700 */
+  --card: 10 10 10;
+  --ring: var(--accent);
+}
+
+/* Light */
+html[data-theme="light"] {
+  color-scheme: light;
+  --bg: 250 250 250;         /* neutral-50 */
+  --fg: 17 24 39;            /* neutral-900 */
+  --muted: 245 245 245;      /* neutral-100 */
+  --border: 229 231 235;     /* neutral-200 */
+  --card: 255 255 255;
+  --ring: var(--accent);
+}
+
+/* App-wide base surface & text */
+html, body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--fg));
+}
+
+/* Cards, inputs, borders */
+.app-card {
+  background-color: rgb(var(--card));
+  border: 1px solid rgb(var(--border));
+  border-radius: var(--radius);
+}
+
+.app-border {
+  border-color: rgb(var(--border));
+}
+
+.app-input {
+  background-color: rgb(var(--card));
+  color: rgb(var(--fg));
+  border: 1px solid rgb(var(--border));
+  border-radius: 12px;
+}
+
+.app-ring {
+  outline: 2px solid rgb(var(--ring));
+  outline-offset: 2px;
+}
+
+/* Accent utility */
+.text-accent { color: rgb(var(--accent)); }
+.bg-accent { background-color: rgb(var(--accent)); }
+.ring-accent { --tw-ring-color: rgb(var(--accent)); }
+
+/* Scrollbar (subtle) */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--border)) transparent;
+}
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb {
+  background: rgba(var(--border)/0.9);
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-track { background: transparent; }
