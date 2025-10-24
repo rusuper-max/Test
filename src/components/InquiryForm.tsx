@@ -6,7 +6,7 @@ import { deco } from "@/lib/fonts";
 import { PLANS, type PlanSlug } from "@/data/packages";
 
 // Samo za validaciju/label (korisnik ovo ne menja ovde)
-const TYPES = ["Svadba", "Venčanje", "Studio", "Rođendan", "Krštenja", "Drugo"] as const;
+const TYPES = ["Svadba", "Venčanje", "Studio", "Rođendan", "Krštenje", "Drugo"] as const;
 type TypeOption = (typeof TYPES)[number];
 
 type FormState = {
@@ -54,7 +54,42 @@ function isValidTime(t?: string) {
 
 function normType(v?: string): TypeOption | undefined {
   const s = (v ?? "").trim();
-  return (TYPES as readonly string[]).includes(s) ? (s as TypeOption) : undefined;
+  if (!s) return undefined;
+
+  // normalize: strip diacritics, lower, remove spaces
+  const normalize = (x: string) =>
+    x
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .replace(/\s+/g, "");
+
+  const key = normalize(s);
+
+  // aliases/synonyms → canonical label from TYPES
+  const MAP: Record<string, TypeOption> = {
+    svadba: "Svadba",
+    vencanje: "Venčanje",
+    venčanje: "Venčanje",
+
+    studio: "Studio",
+    portret: "Studio",
+    portreti: "Studio",
+
+    rodjendan: "Rođendan",
+    rodjendani: "Rođendan",
+    rođendan: "Rođendan",
+    rođendani: "Rođendan",
+
+    krstenje: "Krštenje",
+    krstenja: "Krštenje",
+    krštenje: "Krštenje",
+    krštenja: "Krštenje",
+
+    drugo: "Drugo",
+  };
+
+  return MAP[key] || ((TYPES as readonly string[]).includes(s as any) ? (s as TypeOption) : undefined);
 }
 
 function prettyLabel(key: string) {

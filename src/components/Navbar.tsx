@@ -49,6 +49,8 @@ export default function Navbar() {
   const [offersOpen, setOffersOpen] = useState(false);
   const [hoverPlan, setHoverPlan] = useState<PlanSlug>("basic");
   const [events, setEvents] = useState<string[]>([...FALLBACK_EVENTS]);
+
+  // timer za odloženo zatvaranje (sprečava "bljeskanje")
   const closeTimerRef = useRef<number | null>(null);
 
   // učitaj tipove proslave iz API-ja (ako postoji)
@@ -68,9 +70,13 @@ export default function Navbar() {
   }, []);
 
   const openOffers = () => {
-    if (closeTimerRef.current) { clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
     setOffersOpen(true);
   };
+
   const scheduleCloseOffers = () => {
     if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
     closeTimerRef.current = window.setTimeout(() => setOffersOpen(false), 180);
@@ -102,6 +108,8 @@ export default function Navbar() {
               <div
                 className="absolute left-0 top-full z-50 mt-0 overflow-visible rounded-2xl border border-white/10 bg-black/80 p-2 shadow-2xl shadow-black/50 backdrop-blur"
                 role="menu"
+                onMouseEnter={openOffers}
+                onMouseLeave={scheduleCloseOffers}
                 style={
                   {
                     // širina = 1 kolona paketa + most + 2 kolone eventa + unutrašnji gapovi
@@ -110,35 +118,42 @@ export default function Navbar() {
                   } as React.CSSProperties
                 }
               >
-                {/* uvek u JEDNOM redu */}
+                {/* uvek u JEDNOM redu; items-stretch => leva kolona prati visinu desne */}
                 <div className="flex flex-nowrap items-stretch gap-2">
-                  {/* Levo: paketi (fiksna širina) */}
-                  <div className="shrink-0 rounded-xl border border-white/10 p-1" style={{ width: TILE_W }}>
-                    {OFFERS.map((o) => {
-                      const active = hoverPlan === o.slug;
-                      return (
-                        <button
-                          key={o.slug}
-                          onMouseEnter={() => setHoverPlan(o.slug)}
-                          className="offer-item relative block w/full overflow-hidden rounded-lg px-3 py-2 text-left text-sm text-white/85 transition hover:text-white focus:outline-none"
-                          title={o.name}
-                          aria-pressed={active}
-                          style={{
-                            boxShadow: active ? `inset 0 0 0 1px ${o.color}` : "none",
-                            border: active ? `1px solid rgba(255,255,255,0.12)` : "1px solid transparent",
-                          }}
-                        >
-                          <span
-                            className="color-wipe pointer-events-none absolute inset-0 z-0 opacity-0"
-                            style={{ background: o.wipe }}
-                          />
-                          <span className="relative z-10 flex items-center justify-between">
-                            {o.name}
-                            <span className="text-white/40 transition-transform">→</span>
-                          </span>
-                        </button>
-                      );
-                    })}
+                  {/* Levo: paketi (fiksna širina, FLEX-COL i svaka pločica flex-1 da popuni visinu) */}
+                  <div
+                    className="shrink-0 rounded-xl border border-white/10 p-2 flex flex-col"
+                    style={{ width: TILE_W }}
+                  >
+                    <div className="px-1 pb-1 text-xs text-white/60">Izaberite paket</div>
+                    <div className="flex flex-col gap-2 h-full">
+                      {OFFERS.map((o) => {
+                        const active = hoverPlan === o.slug;
+                        return (
+                          <button
+                            key={o.slug}
+                            onMouseEnter={() => setHoverPlan(o.slug)}
+                            className="offer-item relative overflow-hidden rounded-lg px-3 py-2 text-left text-sm text-white/85 transition hover:text-white focus:outline-none flex-1 min-h-[48px]"
+                            title={o.name}
+                            aria-pressed={active}
+                            style={{
+                              boxShadow: active ? `inset 0 0 0 1px ${o.color}` : "none",
+                              border: active ? `1px solid rgba(255,255,255,0.12)` : "1px solid rgba(255,255,255,0.08)",
+                              backgroundColor: "rgba(0,0,0,0.3)",
+                            }}
+                          >
+                            <span
+                              className="color-wipe pointer-events-none absolute inset-0 z-0 opacity-0"
+                              style={{ background: o.wipe }}
+                            />
+                            <span className="relative z-10 flex items-center justify-between">
+                              {o.name}
+                              <span className="text-white/40 transition-transform">→</span>
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* mali “most” da prelaz miša ne prekine meni */}
@@ -146,7 +161,7 @@ export default function Navbar() {
 
                   {/* Desno: vidovi (svaka pločica tačno kao levo: TILE_W) */}
                   <div className="shrink-0 rounded-xl border border-white/10 p-2">
-                    <div className="px-2 pb-1 text-xs text-white/60">Odaberite vid proslave</div>
+                    <div className="px-2 pb-1 text-xs text-white/60">Izaberite vid proslave</div>
                     <ul
                       className="grid"
                       style={{
@@ -158,7 +173,7 @@ export default function Navbar() {
                         <li key={ev}>
                           <Link
                             href={`/ponude?plan=${activeOffer.slug}&type=${encodeURIComponent(ev)}`}
-                            className="event-link group relative block overflow-hidden rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white/85 transition"
+                            className="event-link group relative block overflow-hidden rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-sm text-white/85 transition min-h-[48px]"
                             title={`${activeOffer.name} — ${ev}`}
                           >
                             <span className="relative z-10 flex items-center justify-between">
@@ -172,7 +187,7 @@ export default function Navbar() {
                               <span className="text-white/40 transition-transform group-hover:translate-x-0.5">→</span>
                             </span>
 
-                            {/* hover aura — sada ide DO SAME IVICE ( -inset-px ) */}
+                            {/* hover aura — DO SAME IVICE */}
                             <span
                               className="hover-fill pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-200 group-hover:opacity-100"
                               style={{

@@ -412,18 +412,68 @@ setEventType(matched as EventType);
         <div>
           <div className="text-sm text-white/60">Tip proslave</div>
           <div className="mt-2">
-            <select
-              value={eventType}
-              onChange={(e) => setEventType(e.target.value as EventType)}
-              className="w-full rounded-xl border bg-black/40 px-3 py-2 outline-none transition"
+            <div
+              className="select-wrap relative"
+              style={
+                {
+                  ["--selBorder" as any]: planColor.border,
+                } as React.CSSProperties
+              }
             >
-              {events.map((t) => (<option key={t} value={t}>{t}</option>))}
-            </select>
+              <select
+                value={eventType}
+                onChange={(e) => setEventType(e.target.value as EventType)}
+                className="event-select nice w-full appearance-none rounded-xl border bg-black/40 px-3 py-2 pr-9 transition"
+              >
+                {events.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+              <span className="sel-caret pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-white/70">▾</span>
+            </div>
             <div className="mt-1 text-xs text-white/60">
               Cene i mogućnosti zavise od tipa proslave.
             </div>
           </div>
         </div>
+
+        <style>{`
+          /* Fancy select wrapper with subtle inner glow that follows the active plan color */
+          .select-wrap {
+            border-radius: 12px;
+            background:
+              linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,0)) padding-box;
+            box-shadow:
+              inset 0 0 0 1px var(--selBorder),
+              inset 0 0 24px color-mix(in oklab, var(--selBorder) 22%, transparent);
+          }
+          .select-wrap:hover {
+            box-shadow:
+              inset 0 0 0 1px var(--selBorder),
+              inset 0 0 36px color-mix(in oklab, var(--selBorder) 30%, transparent);
+          }
+          .event-select.nice {
+            outline: none;
+            border: 1px solid transparent; /* wrapper drži pravi border */
+            background-clip: padding-box;
+            backdrop-filter: blur(2px);
+          }
+          .event-select.nice:focus-visible {
+            box-shadow: none;
+          }
+          .select-wrap:has(select:focus-visible),
+          .select-wrap:has(select:focus) {
+            box-shadow:
+              inset 0 0 0 2px var(--selBorder),
+              inset 0 0 42px color-mix(in oklab, var(--selBorder) 36%, transparent);
+          }
+          .sel-caret {
+            filter: drop-shadow(0 1px 0 rgba(0,0,0,.25));
+            color: color-mix(in oklab, var(--selBorder) 80%, white);
+          }
+        `}</style>
 
         {/* Paketi */}
         <div className="mt-5 text-sm text-white/60">Izbor paketa</div>
@@ -437,11 +487,13 @@ setEventType(matched as EventType);
                 <button
                   onClick={() => setPlan(p)}
                   aria-pressed={isActive}
-                  className="w-full flex items-center justify-between rounded-xl border px-3 py-2 text-left transition hover:bg-white/5 focus:outline-none"
+                  data-active={isActive}
+                  className="offer-btn w-full flex items-center justify-between rounded-xl border px-3 py-2 text-left transition hover:bg-white/5 focus:outline-none"
                   style={{
                     borderColor: isActive ? color.border : "rgba(255,255,255,.10)",
                     boxShadow: isActive ? `0 0 0 1px ${color.border}` : "none",
                     background: isActive ? "rgba(255,255,255,0.03)" : "transparent",
+                    ["--planColor" as any]: color.border,
                   }}
                   title={`Izaberi paket ${DISPLAY_PLAN_NAME[p]}`}
                 >
@@ -557,6 +609,46 @@ setEventType(matched as EventType);
           })}
         </div>
       </div>
+      <style>{`
+        .offer-btn {
+          position: relative;
+          overflow: hidden;
+          transform: translateZ(0);
+          transition: transform .18s ease, background-color .2s ease, border-color .2s ease, box-shadow .2s ease;
+        }
+        .offer-btn::after {
+          content: "";
+          position: absolute;
+          inset: -2px;
+          border-radius: 12px;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity .18s ease;
+        }
+        /* Pulse + tiny lift only when hovering a NON-active plan */
+        .offer-btn:not([data-active="true"]):hover {
+          transform: translateZ(0) scale(1.012);
+        }
+        .offer-btn:not([data-active="true"]):hover::after {
+          opacity: .95;
+          animation: offer-pulse 1.1s ease-in-out infinite;
+          box-shadow:
+            0 0 0 1px var(--planColor),
+            0 0 22px color-mix(in oklab, var(--planColor) 48%, transparent);
+        }
+        @keyframes offer-pulse {
+          0%, 100% {
+            box-shadow:
+              0 0 0 1px var(--planColor),
+              0 0 18px color-mix(in oklab, var(--planColor) 42%, transparent);
+          }
+          50% {
+            box-shadow:
+              0 0 0 1px var(--planColor),
+              0 0 34px color-mix(in oklab, var(--planColor) 62%, transparent);
+          }
+        }
+      `}</style>
 
       {/* DESNO — addoni + rezultat */}
       <div className="card p-4">
