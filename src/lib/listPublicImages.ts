@@ -1,31 +1,15 @@
-import fs from "node:fs";
-import path from "node:path";
+// src/lib/listPublicImages.ts
+import { PORTFOLIO_MANIFEST, type PortfolioCat } from "@/data/portfolioManifest";
 
-const exts = new Set([".webp", ".jpg", ".jpeg", ".png"]);
+export type PublicImage = { src: string };
 
-// Vrati listu {src, alt} iz public/portfolio/<category> sortirano po imenu
-export function listPublicImagesIn(category: string) {
-  const dir = path.join(process.cwd(), "public", "portfolio", category);
-  let files: string[] = [];
-  try {
-    files = fs.readdirSync(dir);
-  } catch {
-    return [];
-  }
-
-  const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: "base" });
-
-  return files
-    .filter((f) => exts.has(path.extname(f).toLowerCase()))
-    .sort(collator.compare)
-    .map((f) => ({
-      src: `/portfolio/${category}/${f}`,
-      alt: filenameToAlt(f),
-    }));
+/** Vrati slike za konkretnu kategoriju iz manifest-a */
+export function listPublicImagesIn(cat: PortfolioCat): PublicImage[] {
+  const files = PORTFOLIO_MANIFEST[cat] ?? [];
+  return files.map((name) => ({ src: `/portfolio/${cat}/${name}` }));
 }
 
-function filenameToAlt(filename: string) {
-  // "p01-mlada_ulaz.webp" -> "p01 mlada ulaz"
-  const base = filename.replace(/\.[^/.]+$/, "");
-  return base.replace(/[_-]+/g, " ").trim();
+/** Ako ti negde treba lista svih kategorija koje postoje u manifestu */
+export function listPortfolioCats(): PortfolioCat[] {
+  return Object.keys(PORTFOLIO_MANIFEST) as PortfolioCat[];
 }

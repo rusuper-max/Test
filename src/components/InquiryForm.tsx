@@ -6,7 +6,7 @@ import { deco } from "@/lib/fonts";
 import { PLANS, type PlanSlug } from "@/data/packages";
 
 // Dozvoljeni tipovi događaja (prvi je default)
-const TYPES = ["Svadba", "Venčanje", "Portret", "Rođendan", "Krštenja", "Drugo"] as const;
+const TYPES = ["Svadba", "Venčanje", "Studio", "Rođendan", "Krštenja", "Drugo"] as const;
 type TypeOption = (typeof TYPES)[number];
 
 type FormState = {
@@ -22,7 +22,7 @@ type FormState = {
 };
 
 // koristi se SAMO za mailto fallback kad API ne uspe
-const TO_EMAIL = "Rusuper@gmail.com";
+const TO_EMAIL = "studio.contrast031@gmail.com";
 
 /* ---------- helpers za vreme ---------- */
 function clamp(n: number, min: number, max: number) {

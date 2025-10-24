@@ -279,9 +279,24 @@ export default function InquiryPage({ searchParams = {} }: { searchParams?: Sear
           </div>
 
           {/* ——— FORMA ——— */}
-          <div className="mt-10">
-            <InquiryForm prefill={prefill as any} />
-          </div>
+{hasPlan ? (
+  <div className="mt-10">
+    <InquiryForm prefill={prefill as any} />
+  </div>
+) : (
+  <div className="mt-10 rounded-2xl border border-yellow-400/30 bg-yellow-400/5 p-4 text-yellow-100">
+    <div className="font-medium">Najpre izaberite paket u konfiguratoru</div>
+    <p className="mt-1 text-sm text-yellow-200/90">
+      „Pošalji upit” forma se otključava kada izaberete paket i opcije u Ponudama.
+    </p>
+    <a href="/ponude" className="btn btn-primary mt-3 inline-flex">
+      Otvori konfigurator
+    </a>
+    <p className="mt-3 text-xs text-yellow-200/80">
+      Imate kratko pitanje? Možete koristiti i brzi upit na početnoj strani.
+    </p>
+  </div>
+)}
 
           <p className="mt-6 text-center text-xs text-white/60">
             Radimo širom Srbije i regiona. U sezoni termini se brzo popunjavaju — javite se na vreme.

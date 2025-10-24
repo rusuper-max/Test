@@ -18,7 +18,7 @@ importers:
         specifier: 15.5.6
         version: 15.5.6(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       nodemailer:
-        specifier: ^7.0.10
+        specifier: 7.0.10
         version: 7.0.10
       react:
         specifier: 19.1.0
@@ -27,32 +27,32 @@ importers:
         specifier: 19.1.0
         version: 19.1.0(react@19.1.0)
       xlsx:
-        specifier: ^0.18.5
+        specifier: 0.18.5
         version: 0.18.5
     devDependencies:
       '@eslint/eslintrc':
-        specifier: ^3
+        specifier: ^3.3.1
         version: 3.3.1
       '@tailwindcss/postcss':
-        specifier: ^4
+        specifier: ^4.1.14
         version: 4.1.14
       '@types/node':
-        specifier: ^20
+        specifier: ^20.19.22
         version: 20.19.22
       '@types/nodemailer':
-        specifier: ^7.0.2
+        specifier: 7.0.2
         version: 7.0.2
       '@types/react':
-        specifier: ^19
+        specifier: ^19.2.2
         version: 19.2.2
       '@types/react-dom':
-        specifier: ^19
+        specifier: ^19.2.2
         version: 19.2.2(@types/react@19.2.2)
       autoprefixer:
         specifier: ^10.4.21
         version: 10.4.21(postcss@8.5.6)
       eslint:
-        specifier: ^9
+        specifier: ^9.38.0
         version: 9.38.0(jiti@2.6.1)
       eslint-config-next:
         specifier: 15.5.6
@@ -61,10 +61,10 @@ importers:
         specifier: ^8.5.6
         version: 8.5.6
       tailwindcss:
-        specifier: ^4
+        specifier: ^4.1.14
         version: 4.1.14
       typescript:
-        specifier: ^5
+        specifier: ^5.9.3
         version: 5.9.3
 
 packages:
