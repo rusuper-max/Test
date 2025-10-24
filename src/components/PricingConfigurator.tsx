@@ -151,8 +151,8 @@ function norm(s: string) {
 // sinonimi i jednina/množina → kanonsko ime
 const TYPE_ALIASES: Record<string, string> = {
   svadba: "Svadba",
-  vencanje: "Svadba",
-  "venčanje": "Svadba",
+  vencanje: "vencanje",
+  "venčanje": "Venčanje",
 
   studio: "Studio",
   portret: "Studio",

@@ -1,9 +1,12 @@
 // src/components/InquiryForm.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { deco } from "@/lib/fonts";
 import { PLANS, type PlanSlug } from "@/data/packages";
+import Script from "next/script";
+const TS_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!;
+
 
 // Samo za validaciju/label (korisnik ovo ne menja ovde)
 const TYPES = ["Svadba", "Venčanje", "Studio", "Rođendan", "Krštenje", "Drugo"] as const;
@@ -150,6 +153,9 @@ export default function InquiryForm({
   const [sent, setSent] = useState<null | "ok" | "err">(null);
   const priceHint = prefill?.priceHint;
 
+  const [tsToken, setTsToken] = useState("");
+  const widgetRef = useRef<HTMLDivElement>(null);
+
   const emailValid = useMemo(() => /\S+@\S+\.\S+/.test(f.email.trim()), [f.email]);
   const phoneDigits = useMemo(() => f.phone.replace(/\D+/g, ""), [f.phone]);
   const phoneValid = phoneDigits.length >= 7;
@@ -237,9 +243,26 @@ export default function InquiryForm({
     return `mailto:${TO_EMAIL}?subject=${s}&body=${b}`;
   }, [subject, body]);
 
+  useEffect(() => {
+    // If script is already on the page and ref exists, render the widget
+    if (typeof window !== "undefined" && window.turnstile && widgetRef.current) {
+      window.turnstile.render(widgetRef.current, {
+        sitekey: TS_SITE_KEY,
+        theme: "dark",
+        callback: (token: string) => setTsToken(token),
+        "expired-callback": () => setTsToken(""),
+        "error-callback": () => setTsToken(""),
+      });
+    }
+  }, []);
+
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit || sending) return;
+    if (!tsToken) {
+      alert("Molimo potvrdite da niste robot.");
+      return;
+    }
 
     const payload = {
       ...f,
@@ -250,6 +273,7 @@ export default function InquiryForm({
       extraHours: prefill?.extraHours ?? 0,
       priceHint: priceHint,
       addons: selectedAddons,
+      turnstileToken: tsToken,
     };
 
     setSending(true);
@@ -389,6 +413,23 @@ export default function InquiryForm({
           </div>
         </div>
 
+        {/* Cloudflare Turnstile */}
+        <Script
+          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+          strategy="afterInteractive"
+          onReady={() => {
+            if (window.turnstile && widgetRef.current) {
+              window.turnstile.render(widgetRef.current, {
+                sitekey: TS_SITE_KEY,
+                theme: "dark",
+                callback: (token: string) => setTsToken(token),
+                "expired-callback": () => setTsToken(""),
+                "error-callback": () => setTsToken(""),
+              });
+            }
+          }}
+        />
+        <div className="mt-4" ref={widgetRef} />
         {/* CTA */}
         <div className="mt-6 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
           <div className="text-xs text-white/60">
@@ -397,7 +438,7 @@ export default function InquiryForm({
           </div>
           <button
             type="submit"
-            disabled={!canSubmit || sending}
+            disabled={!canSubmit || sending || !tsToken}
             className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-70"
             title={
               hasPlan

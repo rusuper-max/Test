@@ -23,7 +23,7 @@ type TeamPerson = {
 const TEAM: TeamPerson[] = [
   {
     name: "Janko",
-    role: "Cinematographer & Photographer",
+    role: "Videograf i fotograf",
     photo: "/about/janko.jpg",
     bio: [
       "Strast prema slici i pokretu vodi me da svaku priču ispričam iskreno i sa dušom...",

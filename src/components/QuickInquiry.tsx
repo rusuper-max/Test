@@ -1,6 +1,7 @@
+// src/components/QuickInquiry.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 
 type FormState = {
   type: string;
@@ -8,8 +9,7 @@ type FormState = {
   location: string;
   email: string;
   message: string;
-  // honeypot (anti-spam)
-  website?: string;
+  website?: string; // honeypot
 };
 
 const DEFAULT: FormState = {
@@ -20,17 +20,58 @@ const DEFAULT: FormState = {
   message: "",
 };
 
+const SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
+
 export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState> }) {
   const [f, setF] = useState<FormState>({ ...DEFAULT, ...prefill });
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<null | "ok" | "err">(null);
+
+  // Turnstile
+  const [tsToken, setTsToken] = useState("");
+  const widgetRef = useRef<HTMLDivElement | null>(null);
+  const widgetIdRef = useRef<string | null>(null);
+
+  const renderTurnstile = () => {
+    if (!widgetRef.current || !window.turnstile || !SITE_KEY) return;
+
+    // očisti kontejner (sprečava dupli render u dev/StrictMode)
+    widgetRef.current.innerHTML = "";
+
+    // eksplicitni render — čuvamo vraćeni widgetId
+    widgetIdRef.current = window.turnstile.render(widgetRef.current, {
+      sitekey: SITE_KEY,
+      theme: "auto",
+      callback: (token) => setTsToken(token),
+      "expired-callback": () => setTsToken(""),
+      "error-callback": () => setTsToken(""),
+    });
+  };
+
+  // Ako je skripta već učitana (druga forma na stranici), odmah renderuj
+  useEffect(() => {
+    if (window.turnstile) {
+      renderTurnstile();
+      return;
+    }
+    // ako nije, sačekaj je kratko
+    const t = setInterval(() => {
+      if (window.turnstile) {
+        clearInterval(t);
+        renderTurnstile();
+      }
+    }, 150);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const emailValid = useMemo(() => /\S+@\S+\.\S+/.test(f.email.trim()), [f.email]);
   const canSubmit =
     f.type.trim().length >= 2 &&
     f.date.trim().length >= 4 &&
     f.location.trim().length >= 2 &&
-    emailValid;
+    emailValid &&
+    !!tsToken; // bez tokena nema submit
 
   const onChange =
     (key: keyof FormState) =>
@@ -48,12 +89,19 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
       const res = await fetch("/api/inquiry-quick", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(f),
+        body: JSON.stringify({ ...f, tsToken }),
       });
       if (!res.ok) throw new Error(await res.text());
       setSent("ok");
-      // lagani reset poruke (zadržavamo osnovne podatke)
       setF((s) => ({ ...s, message: "" }));
+      setTsToken("");
+
+      // bez crvenih linija: reset preko widgetId (string)
+      try {
+        if (widgetIdRef.current) {
+          window.turnstile?.reset(widgetIdRef.current);
+        }
+      } catch {}
     } catch {
       setSent("err");
     } finally {
@@ -63,7 +111,7 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
 
   return (
     <form onSubmit={submit} className="grid gap-4">
-      {/* HONEYPOT (ne diraj) */}
+      {/* HONEYPOT */}
       <input
         type="text"
         value={f.website || ""}
@@ -135,7 +183,18 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </div>
       </div>
 
-      <div className="mt-1 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
+      {/* TURNSTILE WIDGET — bez 'cf-turnstile' klase (nema auto-rendera) */}
+      <div className="mt-1">
+        <div ref={widgetRef} className="min-h-[70px]">
+          {!SITE_KEY && (
+            <span className="text-xs text-red-400/80">
+              (TURNSTILE: nema SITE KEY-a – proveri NEXT_PUBLIC_TURNSTILE_SITE_KEY)
+            </span>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-2 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
         <div className="text-xs text-white/60">
           Ispunite kratku formu i javljamo se u najkraćem roku.
         </div>
@@ -143,7 +202,7 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
           type="submit"
           disabled={!canSubmit || sending}
           className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-70"
-          title={canSubmit ? "Pošalji brzi upit" : "Popunite obavezna polja"}
+          title={canSubmit ? "Pošalji brzi upit" : !tsToken ? "Potvrdite captcha" : "Popunite obavezna polja"}
         >
           {sending ? "Slanje…" : sent === "ok" ? "Poslato ✓" : "Pošalji brzi upit"}
         </button>
