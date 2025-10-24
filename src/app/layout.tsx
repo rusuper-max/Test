@@ -1,22 +1,9 @@
-// src/app/layout.tsx
 import type { Metadata } from "next";
 import "./globals.css";
-// src/app/layout.tsx
-import Script from "next/script";
-
-// u <head>:
-<Script
-  id="cf-turnstile"
-  src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
-  strategy="afterInteractive"
-  async
-  defer
-/>
+import TurnstileLoader from "@/components/TurnstileLoader";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const SITE_NAME = "Studio Contrast";
-
-// promeni verziju kad želiš da nateraš browser da povuče novu ikonu
 const ICON_VER = "20251024b";
 
 export const metadata: Metadata = {
@@ -39,8 +26,6 @@ export const metadata: Metadata = {
     images: ["/og.jpg"],
   },
   robots: { index: true, follow: true },
-
-  // Eksplicitno ka /icon.png uz verziju — Next App Router
   icons: {
     icon: [{ url: `/icon.png?v=${ICON_VER}`, type: "image/png", sizes: "any" }],
     shortcut: [{ url: `/icon.png?v=${ICON_VER}` }],
@@ -68,11 +53,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
-        {/* Tvrdi linkovi — pomažu da pregaziš keš u devu */}
         <link rel="icon" href={`/icon.png?v=${ICON_VER}`} sizes="any" type="image/png" />
         <link rel="shortcut icon" href={`/icon.png?v=${ICON_VER}`} />
       </head>
-      <body>{children}</body>
+      <body>
+        {/* Učita Turnstile skriptu jednom, globalno */}
+        <TurnstileLoader />
+        {children}
+      </body>
     </html>
   );
 }

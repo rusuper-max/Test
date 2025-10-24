@@ -4,16 +4,14 @@
 import { useMemo, useState, useEffect, useRef } from "react";
 import { deco } from "@/lib/fonts";
 import { PLANS, type PlanSlug } from "@/data/packages";
-import Script from "next/script";
-const TS_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!;
 
+const TS_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "";
 
-// Samo za validaciju/label (korisnik ovo ne menja ovde)
 const TYPES = ["Svadba", "Venčanje", "Studio", "Rođendan", "Krštenje", "Drugo"] as const;
 type TypeOption = (typeof TYPES)[number];
 
 type FormState = {
-  type?: TypeOption; // dolazi iz Konfiguratora
+  type?: TypeOption;
   date: string;
   start?: string;
   end?: string;
@@ -26,7 +24,7 @@ type FormState = {
 
 const TO_EMAIL = "studio.contrast031@gmail.com";
 
-/* ---------- helpers za vreme ---------- */
+/* helpers za vreme */
 function clamp(n: number, min: number, max: number) {
   return Math.min(max, Math.max(min, n));
 }
@@ -53,46 +51,34 @@ function normalizeTime(raw: string | undefined): string {
 function isValidTime(t?: string) {
   return !!t && /^\d{2}:\d{2}$/.test(t);
 }
-/* ------------------------------------- */
 
 function normType(v?: string): TypeOption | undefined {
   const s = (v ?? "").trim();
   if (!s) return undefined;
 
-  // normalize: strip diacritics, lower, remove spaces
   const normalize = (x: string) =>
-    x
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-      .replace(/\s+/g, "");
+    x.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/\s+/g, "");
 
   const key = normalize(s);
-
-  // aliases/synonyms → canonical label from TYPES
   const MAP: Record<string, TypeOption> = {
     svadba: "Svadba",
     vencanje: "Venčanje",
-    venčanje: "Venčanje",
-
+    "venčanje": "Venčanje",
     studio: "Studio",
     portret: "Studio",
     portreti: "Studio",
-
     rodjendan: "Rođendan",
     rodjendani: "Rođendan",
-    rođendan: "Rođendan",
-    rođendani: "Rođendan",
-
+    "rođendan": "Rođendan",
+    "rođendani": "Rođendan",
     krstenje: "Krštenje",
     krstenja: "Krštenje",
-    krštenje: "Krštenje",
-    krštenja: "Krštenje",
-
+    "krštenje": "Krštenje",
+    "krštenja": "Krštenje",
     drugo: "Drugo",
   };
 
-  return MAP[key] || ((TYPES as readonly string[]).includes(s as any) ? (s as TypeOption) : undefined);
+  return MAP[key] || (TYPES as readonly string[]).includes(s) ? (s as TypeOption) : undefined;
 }
 
 function prettyLabel(key: string) {
@@ -153,8 +139,10 @@ export default function InquiryForm({
   const [sent, setSent] = useState<null | "ok" | "err">(null);
   const priceHint = prefill?.priceHint;
 
+  // Turnstile
   const [tsToken, setTsToken] = useState("");
-  const widgetRef = useRef<HTMLDivElement>(null);
+  const widgetRef = useRef<HTMLDivElement | null>(null);
+  const widgetIdRef = useRef<string | null>(null);
 
   const emailValid = useMemo(() => /\S+@\S+\.\S+/.test(f.email.trim()), [f.email]);
   const phoneDigits = useMemo(() => f.phone.replace(/\D+/g, ""), [f.phone]);
@@ -166,12 +154,13 @@ export default function InquiryForm({
     emailValid &&
     phoneValid &&
     f.date.trim().length >= 4 &&
-    f.location.trim().length >= 2;
+    f.location.trim().length >= 2 &&
+    !!tsToken;
 
   const onChange =
     (key: keyof FormState) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-      const val = (e.target as HTMLInputElement).value as any;
+      const val = (e.target as HTMLInputElement).value as string;
       setF((s) => ({ ...s, [key]: val }));
     };
 
@@ -243,26 +232,30 @@ export default function InquiryForm({
     return `mailto:${TO_EMAIL}?subject=${s}&body=${b}`;
   }, [subject, body]);
 
+  /* Turnstile render */
+  const renderTurnstile = () => {
+    if (!widgetRef.current || !window.turnstile || !TS_SITE_KEY) return;
+    widgetRef.current.innerHTML = "";
+    widgetIdRef.current = window.turnstile.render(widgetRef.current, {
+      sitekey: TS_SITE_KEY,
+      theme: "auto",
+      callback: (token) => setTsToken(token),
+      "expired-callback": () => setTsToken(""),
+      "error-callback": () => setTsToken(""),
+    });
+  };
+
   useEffect(() => {
-    // If script is already on the page and ref exists, render the widget
-    if (typeof window !== "undefined" && window.turnstile && widgetRef.current) {
-      window.turnstile.render(widgetRef.current, {
-        sitekey: TS_SITE_KEY,
-        theme: "dark",
-        callback: (token: string) => setTsToken(token),
-        "expired-callback": () => setTsToken(""),
-        "error-callback": () => setTsToken(""),
-      });
-    }
+    if (window.turnstile) renderTurnstile();
+    const onLoaded = () => renderTurnstile();
+    document.addEventListener("cf-turnstile-loaded", onLoaded);
+    return () => document.removeEventListener("cf-turnstile-loaded", onLoaded);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit || sending) return;
-    if (!tsToken) {
-      alert("Molimo potvrdite da niste robot.");
-      return;
-    }
 
     const payload = {
       ...f,
@@ -271,9 +264,9 @@ export default function InquiryForm({
       end: normalizeTime(f.end),
       plan: prefill?.plan,
       extraHours: prefill?.extraHours ?? 0,
-      priceHint: priceHint,
+      priceHint,
       addons: selectedAddons,
-      turnstileToken: tsToken,
+      tsToken, // ako backend još očekuje 'turnstileToken', preimenuj ili podrži oba
     };
 
     setSending(true);
@@ -286,6 +279,10 @@ export default function InquiryForm({
       });
       if (!res.ok) throw new Error(await res.text());
       setSent("ok");
+      setTsToken("");
+      try {
+        if (widgetIdRef.current) window.turnstile?.reset(widgetIdRef.current);
+      } catch {}
     } catch {
       window.location.href = mailtoHref;
       setSent("err");
@@ -413,23 +410,11 @@ export default function InquiryForm({
           </div>
         </div>
 
-        {/* Cloudflare Turnstile */}
-        <Script
-          src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-          strategy="afterInteractive"
-          onReady={() => {
-            if (window.turnstile && widgetRef.current) {
-              window.turnstile.render(widgetRef.current, {
-                sitekey: TS_SITE_KEY,
-                theme: "dark",
-                callback: (token: string) => setTsToken(token),
-                "expired-callback": () => setTsToken(""),
-                "error-callback": () => setTsToken(""),
-              });
-            }
-          }}
-        />
-        <div className="mt-4" ref={widgetRef} />
+        {/* Turnstile widget */}
+        <div className="mt-4">
+          <div ref={widgetRef} className="min-h-[70px]" />
+        </div>
+
         {/* CTA */}
         <div className="mt-6 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
           <div className="text-xs text-white/60">
@@ -438,7 +423,7 @@ export default function InquiryForm({
           </div>
           <button
             type="submit"
-            disabled={!canSubmit || sending || !tsToken}
+            disabled={!canSubmit || sending}
             className="btn btn-primary disabled:cursor-not-allowed disabled:opacity-70"
             title={
               hasPlan

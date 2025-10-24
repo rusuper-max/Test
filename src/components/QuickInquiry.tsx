@@ -27,18 +27,13 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState<null | "ok" | "err">(null);
 
-  // Turnstile
   const [tsToken, setTsToken] = useState("");
   const widgetRef = useRef<HTMLDivElement | null>(null);
   const widgetIdRef = useRef<string | null>(null);
 
   const renderTurnstile = () => {
     if (!widgetRef.current || !window.turnstile || !SITE_KEY) return;
-
-    // očisti kontejner (sprečava dupli render u dev/StrictMode)
     widgetRef.current.innerHTML = "";
-
-    // eksplicitni render — čuvamo vraćeni widgetId
     widgetIdRef.current = window.turnstile.render(widgetRef.current, {
       sitekey: SITE_KEY,
       theme: "auto",
@@ -48,20 +43,14 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
     });
   };
 
-  // Ako je skripta već učitana (druga forma na stranici), odmah renderuj
   useEffect(() => {
     if (window.turnstile) {
       renderTurnstile();
       return;
     }
-    // ako nije, sačekaj je kratko
-    const t = setInterval(() => {
-      if (window.turnstile) {
-        clearInterval(t);
-        renderTurnstile();
-      }
-    }, 150);
-    return () => clearInterval(t);
+    const onLoaded = () => renderTurnstile();
+    document.addEventListener("cf-turnstile-loaded", onLoaded);
+    return () => document.removeEventListener("cf-turnstile-loaded", onLoaded);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -71,7 +60,7 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
     f.date.trim().length >= 4 &&
     f.location.trim().length >= 2 &&
     emailValid &&
-    !!tsToken; // bez tokena nema submit
+    !!tsToken;
 
   const onChange =
     (key: keyof FormState) =>
@@ -95,12 +84,8 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
       setSent("ok");
       setF((s) => ({ ...s, message: "" }));
       setTsToken("");
-
-      // bez crvenih linija: reset preko widgetId (string)
       try {
-        if (widgetIdRef.current) {
-          window.turnstile?.reset(widgetIdRef.current);
-        }
+        if (widgetIdRef.current) window.turnstile?.reset(widgetIdRef.current);
       } catch {}
     } catch {
       setSent("err");
@@ -183,15 +168,9 @@ export default function QuickInquiry({ prefill }: { prefill?: Partial<FormState>
         </div>
       </div>
 
-      {/* TURNSTILE WIDGET — bez 'cf-turnstile' klase (nema auto-rendera) */}
+      {/* TURNSTILE WIDGET */}
       <div className="mt-1">
-        <div ref={widgetRef} className="min-h-[70px]">
-          {!SITE_KEY && (
-            <span className="text-xs text-red-400/80">
-              (TURNSTILE: nema SITE KEY-a – proveri NEXT_PUBLIC_TURNSTILE_SITE_KEY)
-            </span>
-          )}
-        </div>
+        <div ref={widgetRef} className="min-h-[70px]" />
       </div>
 
       <div className="mt-2 flex flex-col items-start justify-between gap-3 md:flex-row md:items-center">
