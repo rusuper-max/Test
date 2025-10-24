@@ -63,7 +63,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="sr">
       <head>
-        {/* JSON-LD može i u <head> i u <body>; ovde ga stavljamo u <head> */}
         <script
           type="application/ld+json"
           // eslint-disable-next-line react/no-danger
