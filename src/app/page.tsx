@@ -29,11 +29,11 @@ const cinzel = Cinzel({
   weight: ["400", "600", "700"],
 });
 
-const CATS: CatSlug[] = ["vencanje", "portret", "crno-belo", "rodjendani"];
+const CATS: CatSlug[] = ["vencanje", "studio", "crno-belo", "rodjendani"];
 
 export default function HomePage() {
   const marqueeItems = CATS.map((slug) => {
-    const list = listPublicImagesIn(slug).slice(0, 12);
+    const list = listPublicImagesIn(slug, { transform: "marquee" }).slice(0, 12);
     return { slug, label: CAT_LABEL[slug], images: list.map((i) => i.src) };
   });
 

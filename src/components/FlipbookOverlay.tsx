@@ -1,3 +1,4 @@
+// src/components/FlipbookOverlay.tsx
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -5,22 +6,30 @@ import { useEffect, useMemo, useRef, useState } from "react";
 export type FlipItem = { src: string; alt?: string };
 
 type Spread = { left?: FlipItem | null; right?: FlipItem | null };
-type Leaf = { front?: FlipItem | null; back?: FlipItem | null; spreadIndex: number };
+type Leaf   = { front?: FlipItem | null; back?: FlipItem | null; spreadIndex: number };
+
+// Pomoćno: uklanja query/hash iz URL-a da dedup radi pouzdano (Cloudinary ume da doda ?_a=...)
+function normKey(s?: string) {
+  return (s ?? "").replace(/([?#]).*$/, "");
+}
 
 function buildSpreads(items: FlipItem[]): Spread[] {
   const spreads: Spread[] = [];
   for (let i = 0; i < items.length; i += 2) {
     spreads.push({ left: items[i] ?? null, right: items[i + 1] ?? null });
   }
-  if (spreads.length === 0 && items.length === 1) spreads.push({ right: items[0] });
+  // Ako ima tačno 1 fotka, desna strana prve strane biće ona (leva ostaje prazna)
+  if (items.length === 1 && spreads.length === 0) spreads.push({ right: items[0] });
   return spreads;
 }
 
 function buildLeaves(spreads: Spread[]): Leaf[] {
   const leaves: Leaf[] = [];
   for (let i = 0; i < spreads.length; i++) {
-    const front = spreads[i].right ?? null;       // desna ovog spreada
-    const back  = spreads[i + 1]?.left ?? null;   // leva sledećeg spreada
+    // front = desna stranica trenutnog spreada
+    const front = spreads[i].right ?? null;
+    // back = leva stranica sledećeg spreada
+    const back  = spreads[i + 1]?.left ?? null;
     if (!front && !back) continue;
     leaves.push({ front, back, spreadIndex: i });
   }
@@ -36,12 +45,28 @@ export default function FlipbookOverlay({
   onClose: () => void;
   fullHref?: string;
 }) {
-  const [page, setPage] = useState(0); // koliko listova je okrenuto
+  const [page, setPage] = useState(0);
   const mountedAt = useRef<number>(Date.now());
 
-  const spreads = useMemo(() => buildSpreads(items), [items]);
+  // 0) DEDUP po src (bez query stringa) – ovo gasi svaku šansu da levo/desno bude ista fotka
+  const cleanItems = useMemo(() => {
+    const seen = new Set<string>();
+    const out: FlipItem[] = [];
+    for (const it of items) {
+      const key = normKey(it?.src);
+      if (!key) continue;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ ...it, src: key });
+    }
+    return out;
+  }, [items]);
+
+  // 1) Spreads i leaves rade nad “clean” listom
+  const spreads = useMemo(() => buildSpreads(cleanItems), [cleanItems]);
   const leaves  = useMemo(() => buildLeaves(spreads), [spreads]);
 
+  // 2) Navigacija
   const maxFlips = useMemo(() => leaves.filter((l) => !!l.back).length, [leaves]);
   const currentSpreadIdx = Math.min(page, Math.max(0, spreads.length - 1));
   const totalSpreads     = spreads.length;
@@ -125,17 +150,16 @@ export default function FlipbookOverlay({
           →
         </button>
 
-       {/* dugme: puna veličina */}
-{fullHref && (
-  <a
-    href={fullHref}
-    onClick={(e) => e.stopPropagation()}
-    className="absolute top-3 right-3 z-[901] inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-sm text-white/90 backdrop-blur hover:bg-white/10"
-    aria-label="Otvori kompletnu galeriju"
-  >
-    Otvori sve
-  </a>
-)}
+        {fullHref && (
+          <a
+            href={fullHref}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute top-3 right-3 z-[901] inline-flex items-center gap-2 rounded-full border border-white/20 bg-black/60 px-3 py-1.5 text-sm text-white/90 backdrop-blur hover:bg-white/10"
+            aria-label="Otvori kompletnu galeriju"
+          >
+            Otvori sve
+          </a>
+        )}
 
         <button
           onClick={onClose}
@@ -185,7 +209,7 @@ export default function FlipbookOverlay({
         </div>
       </div>
 
-      {/* scoped CSS */}
+      {/* scoped CSS (isto kao tvoj, samo ostavljeno netaknuto) */}
       <style>{`
         .flipbook-wrapper{
           margin: 0 auto; width: min(96vw, 1200px); height: min(72vh, 760px);

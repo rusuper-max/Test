@@ -5,12 +5,12 @@ import "./globals.css";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const SITE_NAME = "Studio Contrast";
 
+// promeni verziju kad želiš da nateraš browser da povuče novu ikonu
+const ICON_VER = "20251024b";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: {
-    default: SITE_NAME,
-    template: `%s | ${SITE_NAME}`,
-  },
+  title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` },
   description: "Wedding & portrait photography studio — premium dark-first portfolio i ponude.",
   alternates: { canonical: "/" },
   openGraph: {
@@ -19,14 +19,7 @@ export const metadata: Metadata = {
     siteName: SITE_NAME,
     title: SITE_NAME,
     description: "Wedding & portrait photography studio — premium dark-first portfolio i ponude.",
-    images: [
-      {
-        url: "/og.jpg", // napravi ovaj fajl u /public (1200x630)
-        width: 1200,
-        height: 630,
-        alt: SITE_NAME,
-      },
-    ],
+    images: [{ url: "/og.jpg", width: 1200, height: 630, alt: SITE_NAME }],
   },
   twitter: {
     card: "summary_large_image",
@@ -35,10 +28,15 @@ export const metadata: Metadata = {
     images: ["/og.jpg"],
   },
   robots: { index: true, follow: true },
+
+  // Eksplicitno ka /icon.png uz verziju — Next App Router
+  icons: {
+    icon: [{ url: `/icon.png?v=${ICON_VER}`, type: "image/png", sizes: "any" }],
+    shortcut: [{ url: `/icon.png?v=${ICON_VER}` }],
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // JSON-LD (Organization / LocalBusiness)
   const orgJsonLd = {
     "@context": "https://schema.org",
     "@type": "LocalBusiness",
@@ -48,16 +46,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     description:
       "Wedding & portrait photography studio — prirodni trenuci, istinite emocije i upečatljive fotografije.",
     areaServed: "Serbia",
-    address: {
-      "@type": "PostalAddress",
-      addressCountry: "RS",
-    },
-    // (opciono) popuni ako želiš da prikažeš telefon/mail javno u šemi
-    // telephone: "+381 6x xxx xxxx",
-    // email: "studio.contrast031@gmail.com",
-    sameAs: [
-      // npr: "https://www.instagram.com/...", "https://www.facebook.com/..."
-    ],
+    address: { "@type": "PostalAddress", addressCountry: "RS" },
+    sameAs: [],
   };
 
   return (
@@ -65,9 +55,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script
           type="application/ld+json"
-          // eslint-disable-next-line react/no-danger
           dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
         />
+        {/* Tvrdi linkovi — pomažu da pregaziš keš u devu */}
+        <link rel="icon" href={`/icon.png?v=${ICON_VER}`} sizes="any" type="image/png" />
+        <link rel="shortcut icon" href={`/icon.png?v=${ICON_VER}`} />
       </head>
       <body>{children}</body>
     </html>

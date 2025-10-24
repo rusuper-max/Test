@@ -3,7 +3,7 @@
 export type CatSlug =
   | "crno-belo"
   | "krstenja"
-  | "portret"
+  | "studio"
   | "rodjendani"
   | "svadbe"
   | "vencanje";
@@ -11,7 +11,7 @@ export type CatSlug =
 export const CAT_LABEL: Record<CatSlug, string> = {
   "crno-belo": "Crno-belo",
   krstenja: "Krštenja",
-  portret: "Portret",
+  studio: "Studio",
   rodjendani: "Rođendani",
   svadbe: "Svadbe",
   vencanje: "Venčanje",
@@ -21,7 +21,7 @@ export const CAT_LABEL: Record<CatSlug, string> = {
 export const CAT_ORDER: readonly CatSlug[] = [
   "crno-belo",
   "krstenja",
-  "portret",
+  "studio",
   "rodjendani",
   "svadbe",
   "vencanje",

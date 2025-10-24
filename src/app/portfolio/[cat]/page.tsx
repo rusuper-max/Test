@@ -28,7 +28,7 @@ export default function CategoryAlbumPage({ params, searchParams }: Props) {
   if (!isCatSlug(raw)) return notFound();
   const cat = raw as CatSlug;
 
-  const items = listPublicImagesIn(cat);
+  const items = listPublicImagesIn(cat, { transform: "flipbook" });
   if (!items.length) return notFound();
 
   const fromHome = searchParams?.from === "home";

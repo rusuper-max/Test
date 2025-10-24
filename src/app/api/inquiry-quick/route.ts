@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
       process.env.MAIL_TO_QUICK ||
       process.env.MAIL_TO ||
       process.env.EMAIL_USER ||
-      "RUSuper@gmail.com"; // fallback za test
+      "studio.contrast031@gmail.com"; // fallback za test
 
     const from = process.env.MAIL_FROM || process.env.EMAIL_USER;
 

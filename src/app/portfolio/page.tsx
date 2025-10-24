@@ -20,7 +20,7 @@ const CATS = CAT_ORDER;
 
 export default function PortfolioPage() {
   const cards = CATS.map((slug) => {
-    const imgs = listPublicImagesIn(slug);
+    const imgs = listPublicImagesIn(slug, { transform: "card" });
     const cover = imgs[0]?.src || "/hero/hero.webp";
     return { slug, label: CAT_LABEL[slug], cover };
   });
